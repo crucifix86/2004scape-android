@@ -1,0 +1,33 @@
+# Android/Java
+*.apk
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+out/
+local.properties
+proguard/
+*.log
+
+# Android Studio
+.idea/
+*.iml
+.gradle/
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Node modules (for build tools)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build outputs
+release/
+debug/
