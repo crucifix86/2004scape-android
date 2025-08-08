@@ -62,7 +62,7 @@ public class GameActivity extends AppCompatActivity {
         
         // Load saved display mode
         currentMode = prefs.getInt("displayMode", 0);
-        String[] modes = {"100%", "125%", "150%"};
+        String[] modes = {"FIT", "FILL", "ZOOM"};
         resizeButton.setText(modes[currentMode]);
         
         setupWebView();
@@ -181,23 +181,45 @@ public class GameActivity extends AppCompatActivity {
     
     private void cycleDisplayMode() {
         currentMode = (currentMode + 1) % 3;
-        String[] modes = {"FIT", "FILL", "150%"};
-        resizeButton.setText(modes[currentMode]);
         applyDisplayMode();
     }
     
     private void applyDisplayMode() {
-        float scale = 1.0f;
+        // Get screen dimensions
+        int screenWidth = webView.getWidth();
+        int screenHeight = webView.getHeight();
+        
+        if (screenWidth == 0 || screenHeight == 0) {
+            // WebView not ready yet, try again
+            webView.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    applyDisplayMode();
+                }
+            }, 100);
+            return;
+        }
+        
+        // Game canvas is 765x503 (based on desktop version)
+        // Mobile page might have additional UI elements
+        float gameWidth = 765f;
+        float gameHeight = 503f;
+        
+        // Calculate scale to fit screen
+        float scaleX = screenWidth / gameWidth;
+        float scaleY = screenHeight / gameHeight;
+        float scale = Math.min(scaleX, scaleY); // Use smaller scale to fit both dimensions
         
         switch (currentMode) {
-            case 0: // 100%
-                scale = 1.0f;
+            case 0: // FIT - Show entire game
+                // Scale down to ensure everything is visible
+                scale = scale * 0.9f; // 90% to add some margin
                 break;
-            case 1: // 125%
-                scale = 1.25f;
+            case 1: // FILL - Fill more screen
+                // Use the original calculated scale
                 break;
-            case 2: // 150%
-                scale = 1.5f;
+            case 2: // ZOOM - Closer view
+                scale = scale * 1.2f;
                 break;
         }
         
@@ -205,7 +227,7 @@ public class GameActivity extends AppCompatActivity {
         webView.setScale(scale);
         
         // Update button text
-        String[] modes = {"100%", "125%", "150%"};
+        String[] modes = {"FIT", "FILL", "ZOOM"};
         resizeButton.setText(modes[currentMode]);
         
         // Save preference

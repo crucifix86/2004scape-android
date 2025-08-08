@@ -36,9 +36,9 @@ public class ScalableWebView extends WebView {
         setScaleX(mScale);
         setScaleY(mScale);
         
-        // Adjust the WebView size to compensate
-        int newWidth = (int) (getWidth() / mScale);
-        int newHeight = (int) (getHeight() / mScale);
+        // Center the scaled content
+        setPivotX(getWidth() / 2f);
+        setPivotY(getHeight() / 2f);
         
         // Force layout update
         requestLayout();
