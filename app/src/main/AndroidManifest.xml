@@ -30,6 +30,11 @@
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
             android:screenOrientation="fullSensor"
             android:theme="@style/Theme.2004scape.Fullscreen" />
+        
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.2004scape" />
     </application>
 
 </manifest>

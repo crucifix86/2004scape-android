@@ -9,14 +9,19 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
 import android.widget.ProgressBar;
 import androidx.appcompat.app.AppCompatActivity;
+import android.content.SharedPreferences;
 
 public class GameActivity extends AppCompatActivity {
     
     private WebView webView;
     private ProgressBar progressBar;
+    private Button fullscreenButton;
     private String serverUrl;
+    private SharedPreferences prefs;
+    private boolean isFullscreen = true;
     
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -47,8 +52,19 @@ public class GameActivity extends AppCompatActivity {
         
         webView = findViewById(R.id.webView);
         progressBar = findViewById(R.id.progressBar);
+        fullscreenButton = findViewById(R.id.fullscreenButton);
+        
+        prefs = getSharedPreferences("GameSettings", MODE_PRIVATE);
         
         setupWebView();
+        
+        // Setup fullscreen button
+        fullscreenButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                toggleFullscreen();
+            }
+        });
         
         // Load the game
         webView.loadUrl(serverUrl + "/rs2.cgi");
@@ -72,10 +88,10 @@ public class GameActivity extends AppCompatActivity {
         // Set cache mode
         webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
         
-        // Disable zooming completely
-        webSettings.setBuiltInZoomControls(false);
+        // Initial zoom settings (will be overridden by user settings)
+        webSettings.setBuiltInZoomControls(true);
         webSettings.setDisplayZoomControls(false);
-        webSettings.setSupportZoom(false);
+        webSettings.setSupportZoom(true);
         
         // Use viewport settings from the web page
         webSettings.setLoadWithOverviewMode(false);
@@ -96,7 +112,11 @@ public class GameActivity extends AppCompatActivity {
                 progressBar.setVisibility(View.GONE);
                 webView.setVisibility(View.VISIBLE);
                 
-                // Inject JavaScript to handle full screen canvas
+                // Apply zoom settings
+                int zoomLevel = prefs.getInt("zoomLevel", 100);
+                view.setInitialScale(zoomLevel);
+                
+                // Inject JavaScript to handle canvas display
                 String js = "javascript:(function() {" +
                     "var meta = document.querySelector('meta[name=viewport]');" +
                     "if (!meta) {" +
@@ -104,11 +124,10 @@ public class GameActivity extends AppCompatActivity {
                     "  meta.name = 'viewport';" +
                     "  document.head.appendChild(meta);" +
                     "}" +
-                    "meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';" +
+                    "meta.content = 'width=device-width, initial-scale=" + (zoomLevel/100.0) + ", user-scalable=yes';" +
                     "document.body.style.margin = '0';" +
                     "document.body.style.padding = '0';" +
                     "document.body.style.overflow = 'hidden';" +
-                    "document.body.style.height = '100vh';" +
                     "})();";
                 view.loadUrl(js);
             }
@@ -124,6 +143,31 @@ public class GameActivity extends AppCompatActivity {
         
         // Keep screen on while playing
         webView.setKeepScreenOn(true);
+        
+        // Enable pinch zoom
+        webSettings.setSupportZoom(true);
+        webSettings.setBuiltInZoomControls(true);
+        webSettings.setDisplayZoomControls(false);
+    }
+    
+    private void toggleFullscreen() {
+        View decorView = getWindow().getDecorView();
+        if (isFullscreen) {
+            // Exit fullscreen
+            decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
+            fullscreenButton.setText("FULLSCREEN");
+        } else {
+            // Enter fullscreen
+            decorView.setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    | View.SYSTEM_UI_FLAG_FULLSCREEN);
+            fullscreenButton.setText("EXIT FULL");
+        }
+        isFullscreen = !isFullscreen;
     }
     
     @Override

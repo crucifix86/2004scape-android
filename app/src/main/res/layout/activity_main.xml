@@ -19,33 +19,42 @@
         app:layout_constraintBottom_toTopOf="@+id/serverUrlInput"
         app:layout_constraintVertical_chainStyle="packed" />
 
-    <EditText
-        android:id="@+id/serverUrlInput"
-        android:layout_width="0dp"
+    <TextView
+        android:id="@+id/titleText"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="32dp"
-        android:layout_marginEnd="32dp"
-        android:layout_marginTop="32dp"
-        android:hint="Server URL"
-        android:inputType="textUri"
-        android:textColor="#ffffff"
-        android:textColorHint="#888888"
-        android:backgroundTint="#ffd700"
+        android:layout_marginTop="24dp"
+        android:text="2004Scape Mobile"
+        android:textSize="24sp"
+        android:textColor="#ffd700"
+        android:textStyle="bold"
         app:layout_constraintTop_toBottomOf="@+id/logo"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/playButton" />
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <Button
         android:id="@+id/playButton"
-        android:layout_width="200dp"
+        android:layout_width="250dp"
         android:layout_height="60dp"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="40dp"
         android:text="PLAY"
         android:textSize="20sp"
         android:backgroundTint="#ffd700"
         android:textColor="#000000"
-        app:layout_constraintTop_toBottomOf="@+id/serverUrlInput"
+        app:layout_constraintTop_toBottomOf="@+id/titleText"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <Button
+        android:id="@+id/settingsButton"
+        android:layout_width="250dp"
+        android:layout_height="60dp"
+        android:layout_marginTop="16dp"
+        android:text="SETTINGS"
+        android:textSize="18sp"
+        android:backgroundTint="#666666"
+        android:textColor="#ffffff"
+        app:layout_constraintTop_toBottomOf="@+id/playButton"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent" />
