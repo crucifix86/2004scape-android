@@ -17,7 +17,7 @@ import android.webkit.JavascriptInterface;
 
 public class GameActivity extends AppCompatActivity {
     
-    private WebView webView;
+    private ScalableWebView webView;
     private ProgressBar progressBar;
     private Button fullscreenButton;
     private Button resizeButton;
@@ -62,7 +62,7 @@ public class GameActivity extends AppCompatActivity {
         
         // Load saved display mode
         currentMode = prefs.getInt("displayMode", 0);
-        String[] modes = {"FIT", "FILL", "STRETCH"};
+        String[] modes = {"100%", "125%", "150%"};
         resizeButton.setText(modes[currentMode]);
         
         setupWebView();
@@ -133,50 +133,12 @@ public class GameActivity extends AppCompatActivity {
         // Handle page loading
         webView.setWebViewClient(new WebViewClient() {
             @Override
-            public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
-                super.onPageStarted(view, url, favicon);
-                
-                // Inject CSS before page loads
-                String css = "body { margin: 0 !important; padding: 0 !important; overflow: hidden !important; } " +
-                            "canvas { max-width: none !important; max-height: none !important; }";
-                String js = "javascript:(function() {" +
-                           "var style = document.createElement('style');" +
-                           "style.innerHTML = '" + css + "';" +
-                           "document.head.appendChild(style);" +
-                           "})()";
-                view.loadUrl(js);
-            }
-            
-            @Override
             public void onPageFinished(WebView view, String url) {
                 progressBar.setVisibility(View.GONE);
                 webView.setVisibility(View.VISIBLE);
                 
-                // Force remove viewport restrictions
-                String js = "javascript:(function() {" +
-                    "// Remove viewport meta" +
-                    "var metas = document.getElementsByTagName('meta');" +
-                    "for (var i = metas.length - 1; i >= 0; i--) {" +
-                    "  if (metas[i].name === 'viewport') {" +
-                    "    metas[i].parentNode.removeChild(metas[i]);" +
-                    "  }" +
-                    "}" +
-                    "// Force canvas styles" +
-                    "var canvas = document.querySelector('canvas');" +
-                    "if (canvas) {" +
-                    "  canvas.style.cssText = '';" +
-                    "  canvas.removeAttribute('style');" +
-                    "}" +
-                    "})();";
-                view.loadUrl(js);
-                
-                // Apply display mode after clearing styles
-                view.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        applyDisplayMode();
-                    }
-                }, 500);
+                // Apply display mode
+                applyDisplayMode();
             }
         });
         
@@ -225,57 +187,25 @@ public class GameActivity extends AppCompatActivity {
     }
     
     private void applyDisplayMode() {
-        String transform = "";
-        String width = "";
-        String height = "";
+        float scale = 1.0f;
         
         switch (currentMode) {
-            case 0: // FIT mode - original size
-                transform = "scale(1)";
-                width = "765px";
-                height = "503px";
+            case 0: // 100%
+                scale = 1.0f;
                 break;
-            case 1: // FILL mode - scale up
-                transform = "scale(1.5)";
-                width = "765px";
-                height = "503px";
+            case 1: // 125%
+                scale = 1.25f;
                 break;
-            case 2: // STRETCH mode - fill screen
-                width = "100vw";
-                height = "100vh";
-                transform = "none";
+            case 2: // 150%
+                scale = 1.5f;
                 break;
         }
         
-        // Force canvas size with JavaScript
-        String js = "javascript:(function() {" +
-            "var canvas = document.querySelector('canvas');" +
-            "if (canvas) {" +
-            "  canvas.style.position = 'fixed';" +
-            "  canvas.style.left = '0';" +
-            "  canvas.style.top = '0';" +
-            "  canvas.style.width = '" + width + "';" +
-            "  canvas.style.height = '" + height + "';" +
-            "  canvas.style.transform = '" + transform + "';" +
-            "  canvas.style.transformOrigin = 'top left';" +
-            "  canvas.style.imageRendering = 'pixelated';" +
-            "  canvas.style.zIndex = '9999';" +
-            "}" +
-            "// Hide everything else" +
-            "var style = document.getElementById('androidStyle');" +
-            "if (!style) {" +
-            "  style = document.createElement('style');" +
-            "  style.id = 'androidStyle';" +
-            "  document.head.appendChild(style);" +
-            "}" +
-            "style.innerHTML = 'body > *:not(canvas) { display: none !important; } " +
-            "body { background: #000 !important; margin: 0 !important; padding: 0 !important; }';" +
-            "})();";
-        
-        webView.loadUrl(js);
+        // Apply scale to entire WebView
+        webView.setScale(scale);
         
         // Update button text
-        String[] modes = {"FIT", "FILL", "STRETCH"};
+        String[] modes = {"100%", "125%", "150%"};
         resizeButton.setText(modes[currentMode]);
         
         // Save preference
