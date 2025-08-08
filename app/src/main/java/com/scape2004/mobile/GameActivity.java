@@ -197,76 +197,107 @@ public class GameActivity extends AppCompatActivity {
             resizeButton.setText("DONE");
             resizeButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF00FF00));
             
-            // Enable resize mode
+            // Show resize overlay
             String js = "javascript:(function() {" +
+                "var overlay = document.createElement('div');" +
+                "overlay.id = 'resizeOverlay';" +
+                "overlay.style.position = 'fixed';" +
+                "overlay.style.top = '0';" +
+                "overlay.style.left = '0';" +
+                "overlay.style.width = '100%';" +
+                "overlay.style.height = '100%';" +
+                "overlay.style.backgroundColor = 'rgba(0,0,0,0.5)';" +
+                "overlay.style.zIndex = '9999';" +
+                "overlay.innerHTML = '<div style=\"color:#ffd700;text-align:center;padding:20px;font-size:18px;\">Drag to move • Pinch to resize</div>';" +
+                "" +
                 "var canvas = document.querySelector('canvas');" +
                 "if (!canvas) return;" +
-                "canvas.style.border = '2px dashed #ffd700';" +
-                "canvas.style.cursor = 'move';" +
+                "" +
+                "var canvasClone = canvas.cloneNode();" +
+                "canvasClone.id = 'resizeCanvas';" +
+                "canvasClone.style.border = '2px dashed #ffd700';" +
+                "canvasClone.style.position = 'absolute';" +
+                "canvasClone.style.left = canvas.style.left || '0px';" +
+                "canvasClone.style.top = canvas.style.top || '0px';" +
+                "canvasClone.style.transform = canvas.style.transform || 'scale(1)';" +
+                "canvasClone.style.transformOrigin = 'top left';" +
+                "canvasClone.style.zIndex = '10000';" +
+                "" +
+                "overlay.appendChild(canvasClone);" +
+                "document.body.appendChild(overlay);" +
                 "" +
                 "var isDragging = false;" +
-                "var isPinching = false;" +
                 "var startX = 0, startY = 0;" +
-                "var currentX = parseFloat(canvas.style.left) || 0;" +
-                "var currentY = parseFloat(canvas.style.top) || 0;" +
+                "var currentX = parseFloat(canvasClone.style.left) || 0;" +
+                "var currentY = parseFloat(canvasClone.style.top) || 0;" +
                 "var currentScale = 1;" +
-                "var transform = canvas.style.transform.match(/scale\\(([^)]+)\\)/);" +
+                "var transform = canvasClone.style.transform.match(/scale\\(([^)]+)\\)/);" +
                 "if (transform) currentScale = parseFloat(transform[1]);" +
                 "" +
-                "canvas.addEventListener('touchstart', function(e) {" +
+                "var initialDist = 0;" +
+                "var initialScale = currentScale;" +
+                "" +
+                "overlay.addEventListener('touchstart', function(e) {" +
                 "  if (e.touches.length === 1) {" +
                 "    isDragging = true;" +
                 "    startX = e.touches[0].clientX - currentX;" +
                 "    startY = e.touches[0].clientY - currentY;" +
                 "  } else if (e.touches.length === 2) {" +
-                "    isPinching = true;" +
-                "    var dist = Math.hypot(" +
+                "    isDragging = false;" +
+                "    initialDist = Math.hypot(" +
                 "      e.touches[0].clientX - e.touches[1].clientX," +
                 "      e.touches[0].clientY - e.touches[1].clientY" +
                 "    );" +
-                "    canvas.dataset.startDist = dist;" +
-                "    canvas.dataset.startScale = currentScale;" +
+                "    initialScale = currentScale;" +
                 "  }" +
                 "  e.preventDefault();" +
                 "});" +
                 "" +
-                "canvas.addEventListener('touchmove', function(e) {" +
+                "overlay.addEventListener('touchmove', function(e) {" +
                 "  if (isDragging && e.touches.length === 1) {" +
                 "    currentX = e.touches[0].clientX - startX;" +
                 "    currentY = e.touches[0].clientY - startY;" +
-                "    canvas.style.left = currentX + 'px';" +
-                "    canvas.style.top = currentY + 'px';" +
-                "  } else if (isPinching && e.touches.length === 2) {" +
+                "    canvasClone.style.left = currentX + 'px';" +
+                "    canvasClone.style.top = currentY + 'px';" +
+                "  } else if (e.touches.length === 2 && initialDist > 0) {" +
                 "    var dist = Math.hypot(" +
                 "      e.touches[0].clientX - e.touches[1].clientX," +
                 "      e.touches[0].clientY - e.touches[1].clientY" +
                 "    );" +
-                "    var scale = (dist / parseFloat(canvas.dataset.startDist)) * parseFloat(canvas.dataset.startScale);" +
-                "    currentScale = Math.max(0.5, Math.min(3, scale));" +
-                "    canvas.style.transform = 'scale(' + currentScale + ')';" +
+                "    currentScale = Math.max(0.5, Math.min(3, initialScale * (dist / initialDist)));" +
+                "    canvasClone.style.transform = 'scale(' + currentScale + ')';" +
                 "  }" +
                 "  e.preventDefault();" +
                 "});" +
                 "" +
-                "canvas.addEventListener('touchend', function(e) {" +
+                "overlay.addEventListener('touchend', function() {" +
                 "  isDragging = false;" +
-                "  isPinching = false;" +
+                "  initialDist = 0;" +
                 "  window.Android.saveCanvasPosition(currentX, currentY, currentScale);" +
                 "});" +
+                "" +
+                "window.resizeData = {x: currentX, y: currentY, scale: currentScale};" +
                 "})();";
             webView.loadUrl(js);
         } else {
             resizeButton.setText("RESIZE");
             resizeButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0x80000000));
             
-            // Disable resize mode
+            // Apply resize and remove overlay
             String js = "javascript:(function() {" +
-                "var canvas = document.querySelector('canvas');" +
-                "if (!canvas) return;" +
-                "canvas.style.border = 'none';" +
-                "canvas.style.cursor = 'default';" +
-                "var clone = canvas.cloneNode(true);" +
-                "canvas.parentNode.replaceChild(clone, canvas);" +
+                "var overlay = document.getElementById('resizeOverlay');" +
+                "if (overlay) {" +
+                "  var data = window.resizeData;" +
+                "  if (data) {" +
+                "    var canvas = document.querySelector('canvas');" +
+                "    if (canvas) {" +
+                "      canvas.style.left = data.x + 'px';" +
+                "      canvas.style.top = data.y + 'px';" +
+                "      canvas.style.transform = 'scale(' + data.scale + ')';" +
+                "    }" +
+                "  }" +
+                "  overlay.remove();" +
+                "}" +
                 "})();";
             webView.loadUrl(js);
         }

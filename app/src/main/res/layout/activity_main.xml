@@ -19,29 +19,34 @@
         app:layout_constraintBottom_toTopOf="@+id/serverUrlInput"
         app:layout_constraintVertical_chainStyle="packed" />
 
-    <TextView
-        android:id="@+id/titleText"
-        android:layout_width="wrap_content"
+    <EditText
+        android:id="@+id/serverUrlInput"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:text="2004Scape Mobile"
-        android:textSize="24sp"
-        android:textColor="#ffd700"
-        android:textStyle="bold"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginTop="32dp"
+        android:hint="Server URL"
+        android:inputType="textUri"
+        android:text="https://crucifixpwi.net"
+        android:textColor="#ffffff"
+        android:textColorHint="#888888"
+        android:backgroundTint="#ffd700"
         app:layout_constraintTop_toBottomOf="@+id/logo"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/playButton" />
 
     <Button
         android:id="@+id/playButton"
         android:layout_width="250dp"
         android:layout_height="60dp"
-        android:layout_marginTop="40dp"
+        android:layout_marginTop="24dp"
         android:text="PLAY"
         android:textSize="20sp"
         android:backgroundTint="#ffd700"
         android:textColor="#000000"
-        app:layout_constraintTop_toBottomOf="@+id/titleText"
+        app:layout_constraintTop_toBottomOf="@+id/serverUrlInput"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
