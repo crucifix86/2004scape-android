@@ -49,6 +49,49 @@
             android:textStyle="bold"
             android:layout_marginBottom="16dp" />
 
+        <!-- Aspect Ratio -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Aspect Ratio Mode"
+            android:textColor="#ffffff"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp" />
+
+        <RadioGroup
+            android:id="@+id/aspectRatioGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="24dp">
+
+            <RadioButton
+                android:id="@+id/aspectFit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Fit to Screen (Black bars)"
+                android:textColor="#ffffff"
+                android:buttonTint="#ffd700"
+                android:checked="true" />
+
+            <RadioButton
+                android:id="@+id/aspectFill"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Fill Screen (Crops edges)"
+                android:textColor="#ffffff"
+                android:buttonTint="#ffd700" />
+
+            <RadioButton
+                android:id="@+id/aspectStretch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Stretch to Fill (May distort)"
+                android:textColor="#ffffff"
+                android:buttonTint="#ffd700" />
+
+        </RadioGroup>
+
         <!-- Zoom Level -->
         <TextView
             android:layout_width="match_parent"

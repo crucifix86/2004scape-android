@@ -10,7 +10,6 @@ import androidx.appcompat.app.AppCompatActivity;
 public class MainActivity extends AppCompatActivity {
     
     private Button playButton;
-    private Button settingsButton;
     private SharedPreferences prefs;
     
     @Override
@@ -21,22 +20,12 @@ public class MainActivity extends AppCompatActivity {
         prefs = getSharedPreferences("GameSettings", MODE_PRIVATE);
         
         playButton = findViewById(R.id.playButton);
-        settingsButton = findViewById(R.id.settingsButton);
         
         playButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String serverUrl = prefs.getString("serverUrl", "https://crucifixpwi.net");
                 Intent intent = new Intent(MainActivity.this, GameActivity.class);
-                intent.putExtra("SERVER_URL", serverUrl);
-                startActivity(intent);
-            }
-        });
-        
-        settingsButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+                intent.putExtra("SERVER_URL", "https://crucifixpwi.net");
                 startActivity(intent);
             }
         });

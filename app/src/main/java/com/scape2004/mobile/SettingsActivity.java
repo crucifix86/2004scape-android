@@ -8,6 +8,7 @@ import android.widget.EditText;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.RadioGroup;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class SettingsActivity extends AppCompatActivity {
@@ -17,6 +18,7 @@ public class SettingsActivity extends AppCompatActivity {
     private TextView zoomValueText;
     private Button saveButton;
     private Button resetButton;
+    private RadioGroup aspectRatioGroup;
     
     private SharedPreferences prefs;
     
@@ -33,6 +35,7 @@ public class SettingsActivity extends AppCompatActivity {
         zoomValueText = findViewById(R.id.zoomValueText);
         saveButton = findViewById(R.id.saveButton);
         resetButton = findViewById(R.id.resetButton);
+        aspectRatioGroup = findViewById(R.id.aspectRatioGroup);
         
         // Load saved settings
         loadSettings();
@@ -72,10 +75,20 @@ public class SettingsActivity extends AppCompatActivity {
     private void loadSettings() {
         String serverUrl = prefs.getString("serverUrl", "https://crucifixpwi.net");
         int zoomLevel = prefs.getInt("zoomLevel", 100);
+        String aspectRatio = prefs.getString("aspectRatio", "fit");
         
         serverUrlInput.setText(serverUrl);
         zoomSeekBar.setProgress(zoomLevel - 50);
         zoomValueText.setText(zoomLevel + "%");
+        
+        // Set aspect ratio selection
+        if (aspectRatio.equals("fit")) {
+            aspectRatioGroup.check(R.id.aspectFit);
+        } else if (aspectRatio.equals("fill")) {
+            aspectRatioGroup.check(R.id.aspectFill);
+        } else if (aspectRatio.equals("stretch")) {
+            aspectRatioGroup.check(R.id.aspectStretch);
+        }
     }
     
     private void saveSettings() {
@@ -87,9 +100,21 @@ public class SettingsActivity extends AppCompatActivity {
         
         int zoomLevel = zoomSeekBar.getProgress() + 50;
         
+        // Get selected aspect ratio
+        String aspectRatio = "fit";
+        int selectedId = aspectRatioGroup.getCheckedRadioButtonId();
+        if (selectedId == R.id.aspectFit) {
+            aspectRatio = "fit";
+        } else if (selectedId == R.id.aspectFill) {
+            aspectRatio = "fill";
+        } else if (selectedId == R.id.aspectStretch) {
+            aspectRatio = "stretch";
+        }
+        
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString("serverUrl", serverUrl);
         editor.putInt("zoomLevel", zoomLevel);
+        editor.putString("aspectRatio", aspectRatio);
         editor.apply();
         
         Toast.makeText(this, "Settings saved!", Toast.LENGTH_SHORT).show();

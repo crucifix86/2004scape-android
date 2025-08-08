@@ -23,16 +23,34 @@
         android:max="100"
         android:progressTint="#ffd700" />
     
-    <Button
-        android:id="@+id/fullscreenButton"
+    <LinearLayout
         android:layout_width="wrap_content"
-        android:layout_height="40dp"
+        android:layout_height="wrap_content"
         android:layout_gravity="top|end"
         android:layout_margin="8dp"
-        android:text="EXIT FULL"
-        android:textSize="12sp"
-        android:backgroundTint="#80000000"
-        android:textColor="#ffd700"
-        android:alpha="0.7" />
+        android:orientation="horizontal">
+        
+        <Button
+            android:id="@+id/resizeButton"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:layout_marginEnd="4dp"
+            android:text="RESIZE"
+            android:textSize="12sp"
+            android:backgroundTint="#80000000"
+            android:textColor="#ffd700"
+            android:alpha="0.7" />
+        
+        <Button
+            android:id="@+id/fullscreenButton"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:text="EXIT FULL"
+            android:textSize="12sp"
+            android:backgroundTint="#80000000"
+            android:textColor="#ffd700"
+            android:alpha="0.7" />
+            
+    </LinearLayout>
 
 </FrameLayout>

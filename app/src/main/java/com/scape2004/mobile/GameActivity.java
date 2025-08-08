@@ -13,15 +13,18 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import androidx.appcompat.app.AppCompatActivity;
 import android.content.SharedPreferences;
+import android.webkit.JavascriptInterface;
 
 public class GameActivity extends AppCompatActivity {
     
     private WebView webView;
     private ProgressBar progressBar;
     private Button fullscreenButton;
+    private Button resizeButton;
     private String serverUrl;
     private SharedPreferences prefs;
     private boolean isFullscreen = true;
+    private boolean isResizeMode = false;
     
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -53,6 +56,7 @@ public class GameActivity extends AppCompatActivity {
         webView = findViewById(R.id.webView);
         progressBar = findViewById(R.id.progressBar);
         fullscreenButton = findViewById(R.id.fullscreenButton);
+        resizeButton = findViewById(R.id.resizeButton);
         
         prefs = getSharedPreferences("GameSettings", MODE_PRIVATE);
         
@@ -66,6 +70,14 @@ public class GameActivity extends AppCompatActivity {
             }
         });
         
+        // Setup resize button
+        resizeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                toggleResizeMode();
+            }
+        });
+        
         // Load the game
         webView.loadUrl(serverUrl + "/rs2.cgi");
     }
@@ -76,6 +88,9 @@ public class GameActivity extends AppCompatActivity {
         
         // Enable JavaScript
         webSettings.setJavaScriptEnabled(true);
+        
+        // Add JavaScript interface
+        webView.addJavascriptInterface(new WebInterface(), "Android");
         
         // Enable DOM storage
         webSettings.setDomStorageEnabled(true);
@@ -112,22 +127,28 @@ public class GameActivity extends AppCompatActivity {
                 progressBar.setVisibility(View.GONE);
                 webView.setVisibility(View.VISIBLE);
                 
-                // Apply zoom settings
-                int zoomLevel = prefs.getInt("zoomLevel", 100);
-                view.setInitialScale(zoomLevel);
+                // Load saved canvas position/size
+                float savedScale = prefs.getFloat("canvasScale", 1.0f);
+                float savedX = prefs.getFloat("canvasX", 0);
+                float savedY = prefs.getFloat("canvasY", 0);
                 
-                // Inject JavaScript to handle canvas display
+                // Apply saved scale
+                view.setInitialScale((int)(savedScale * 100));
+                
+                // Inject JavaScript to set up canvas
                 String js = "javascript:(function() {" +
-                    "var meta = document.querySelector('meta[name=viewport]');" +
-                    "if (!meta) {" +
-                    "  meta = document.createElement('meta');" +
-                    "  meta.name = 'viewport';" +
-                    "  document.head.appendChild(meta);" +
-                    "}" +
-                    "meta.content = 'width=device-width, initial-scale=" + (zoomLevel/100.0) + ", user-scalable=yes';" +
                     "document.body.style.margin = '0';" +
                     "document.body.style.padding = '0';" +
                     "document.body.style.overflow = 'hidden';" +
+                    "document.body.style.background = '#000';" +
+                    "var canvas = document.querySelector('canvas');" +
+                    "if (canvas) {" +
+                    "  canvas.style.position = 'absolute';" +
+                    "  canvas.style.left = '" + savedX + "px';" +
+                    "  canvas.style.top = '" + savedY + "px';" +
+                    "  canvas.style.transformOrigin = 'top left';" +
+                    "  canvas.style.transform = 'scale(' + " + savedScale + ")';" +
+                    "}" +
                     "})();";
                 view.loadUrl(js);
             }
@@ -170,6 +191,87 @@ public class GameActivity extends AppCompatActivity {
         isFullscreen = !isFullscreen;
     }
     
+    private void toggleResizeMode() {
+        isResizeMode = !isResizeMode;
+        if (isResizeMode) {
+            resizeButton.setText("DONE");
+            resizeButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF00FF00));
+            
+            // Enable resize mode
+            String js = "javascript:(function() {" +
+                "var canvas = document.querySelector('canvas');" +
+                "if (!canvas) return;" +
+                "canvas.style.border = '2px dashed #ffd700';" +
+                "canvas.style.cursor = 'move';" +
+                "" +
+                "var isDragging = false;" +
+                "var isPinching = false;" +
+                "var startX = 0, startY = 0;" +
+                "var currentX = parseFloat(canvas.style.left) || 0;" +
+                "var currentY = parseFloat(canvas.style.top) || 0;" +
+                "var currentScale = 1;" +
+                "var transform = canvas.style.transform.match(/scale\\(([^)]+)\\)/);" +
+                "if (transform) currentScale = parseFloat(transform[1]);" +
+                "" +
+                "canvas.addEventListener('touchstart', function(e) {" +
+                "  if (e.touches.length === 1) {" +
+                "    isDragging = true;" +
+                "    startX = e.touches[0].clientX - currentX;" +
+                "    startY = e.touches[0].clientY - currentY;" +
+                "  } else if (e.touches.length === 2) {" +
+                "    isPinching = true;" +
+                "    var dist = Math.hypot(" +
+                "      e.touches[0].clientX - e.touches[1].clientX," +
+                "      e.touches[0].clientY - e.touches[1].clientY" +
+                "    );" +
+                "    canvas.dataset.startDist = dist;" +
+                "    canvas.dataset.startScale = currentScale;" +
+                "  }" +
+                "  e.preventDefault();" +
+                "});" +
+                "" +
+                "canvas.addEventListener('touchmove', function(e) {" +
+                "  if (isDragging && e.touches.length === 1) {" +
+                "    currentX = e.touches[0].clientX - startX;" +
+                "    currentY = e.touches[0].clientY - startY;" +
+                "    canvas.style.left = currentX + 'px';" +
+                "    canvas.style.top = currentY + 'px';" +
+                "  } else if (isPinching && e.touches.length === 2) {" +
+                "    var dist = Math.hypot(" +
+                "      e.touches[0].clientX - e.touches[1].clientX," +
+                "      e.touches[0].clientY - e.touches[1].clientY" +
+                "    );" +
+                "    var scale = (dist / parseFloat(canvas.dataset.startDist)) * parseFloat(canvas.dataset.startScale);" +
+                "    currentScale = Math.max(0.5, Math.min(3, scale));" +
+                "    canvas.style.transform = 'scale(' + currentScale + ')';" +
+                "  }" +
+                "  e.preventDefault();" +
+                "});" +
+                "" +
+                "canvas.addEventListener('touchend', function(e) {" +
+                "  isDragging = false;" +
+                "  isPinching = false;" +
+                "  window.Android.saveCanvasPosition(currentX, currentY, currentScale);" +
+                "});" +
+                "})();";
+            webView.loadUrl(js);
+        } else {
+            resizeButton.setText("RESIZE");
+            resizeButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0x80000000));
+            
+            // Disable resize mode
+            String js = "javascript:(function() {" +
+                "var canvas = document.querySelector('canvas');" +
+                "if (!canvas) return;" +
+                "canvas.style.border = 'none';" +
+                "canvas.style.cursor = 'default';" +
+                "var clone = canvas.cloneNode(true);" +
+                "canvas.parentNode.replaceChild(clone, canvas);" +
+                "})();";
+            webView.loadUrl(js);
+        }
+    }
+    
     @Override
     public void onBackPressed() {
         if (webView.canGoBack()) {
@@ -197,5 +299,16 @@ public class GameActivity extends AppCompatActivity {
             webView.destroy();
         }
         super.onDestroy();
+    }
+    
+    public class WebInterface {
+        @JavascriptInterface
+        public void saveCanvasPosition(float x, float y, float scale) {
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putFloat("canvasX", x);
+            editor.putFloat("canvasY", y);
+            editor.putFloat("canvasScale", scale);
+            editor.apply();
+        }
     }
 }
