@@ -32,7 +32,7 @@ public class GameActivity extends AppCompatActivity {
         // Get server URL from intent
         serverUrl = getIntent().getStringExtra("SERVER_URL");
         if (serverUrl == null) {
-            serverUrl = "http://154.38.175.246";
+            serverUrl = "https://crucifixpwi.net";
         }
         
         webView = findViewById(R.id.webView);

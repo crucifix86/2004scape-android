@@ -21,7 +21,7 @@ public class MainActivity extends AppCompatActivity {
         playButton = findViewById(R.id.playButton);
         
         // Default server URL
-        serverUrlInput.setText("http://154.38.175.246");
+        serverUrlInput.setText("https://crucifixpwi.net");
         
         playButton.setOnClickListener(new View.OnClickListener() {
             @Override
