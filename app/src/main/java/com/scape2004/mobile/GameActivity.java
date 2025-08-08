@@ -24,7 +24,7 @@ public class GameActivity extends AppCompatActivity {
     private String serverUrl;
     private SharedPreferences prefs;
     private boolean isFullscreen = true;
-    private boolean isResizeMode = false;
+    private int currentMode = 0; // 0=fit, 1=fill, 2=zoom
     
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -60,6 +60,11 @@ public class GameActivity extends AppCompatActivity {
         
         prefs = getSharedPreferences("GameSettings", MODE_PRIVATE);
         
+        // Load saved display mode
+        currentMode = prefs.getInt("displayMode", 0);
+        String[] modes = {"FIT", "FILL", "150%"};
+        resizeButton.setText(modes[currentMode]);
+        
         setupWebView();
         
         // Setup fullscreen button
@@ -70,12 +75,12 @@ public class GameActivity extends AppCompatActivity {
             }
         });
         
-        // Setup auto-scale button
-        resizeButton.setText("AUTO FIT");
+        // Setup display mode button
+        resizeButton.setText("FIT");
         resizeButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                autoScaleCanvas();
+                cycleDisplayMode();
             }
         });
         
@@ -104,14 +109,18 @@ public class GameActivity extends AppCompatActivity {
         // Set cache mode
         webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
         
-        // Initial zoom settings (will be overridden by user settings)
+        // Enable zooming
         webSettings.setBuiltInZoomControls(true);
         webSettings.setDisplayZoomControls(false);
         webSettings.setSupportZoom(true);
         
-        // Use viewport settings from the web page
-        webSettings.setLoadWithOverviewMode(false);
-        webSettings.setUseWideViewPort(false);
+        // Enable viewport
+        webSettings.setLoadWithOverviewMode(true);
+        webSettings.setUseWideViewPort(true);
+        
+        // Set initial scale
+        webSettings.setMinimumFontSize(1);
+        webSettings.setTextZoom(100);
         
         // Allow file access
         webSettings.setAllowFileAccess(true);
@@ -128,13 +137,13 @@ public class GameActivity extends AppCompatActivity {
                 progressBar.setVisibility(View.GONE);
                 webView.setVisibility(View.VISIBLE);
                 
-                // Auto-scale on first load
+                // Apply initial display mode
                 view.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        autoScaleCanvas();
+                        applyDisplayMode();
                     }
-                }, 500);
+                }, 1000);
             }
         });
         
@@ -175,51 +184,35 @@ public class GameActivity extends AppCompatActivity {
         isFullscreen = !isFullscreen;
     }
     
-    private void autoScaleCanvas() {
-        // Get screen dimensions
-        final int screenWidth = webView.getWidth();
-        final int screenHeight = webView.getHeight();
+    private void cycleDisplayMode() {
+        currentMode = (currentMode + 1) % 3;
+        String[] modes = {"FIT", "FILL", "150%"};
+        resizeButton.setText(modes[currentMode]);
+        applyDisplayMode();
+    }
+    
+    private void applyDisplayMode() {
+        int scale = 100;
         
-        String js = "javascript:(function() {" +
-            "document.body.style.margin = '0';" +
-            "document.body.style.padding = '0';" +
-            "document.body.style.overflow = 'hidden';" +
-            "document.body.style.background = '#000';" +
-            "" +
-            "var canvas = document.querySelector('canvas');" +
-            "if (!canvas) return;" +
-            "" +
-            "// Get canvas dimensions" +
-            "var canvasWidth = canvas.width || 765;" +
-            "var canvasHeight = canvas.height || 503;" +
-            "" +
-            "// Calculate scale to fit screen" +
-            "var scaleX = " + screenWidth + " / canvasWidth;" +
-            "var scaleY = " + screenHeight + " / canvasHeight;" +
-            "var scale = Math.min(scaleX, scaleY);" +
-            "" +
-            "// Apply styles to canvas" +
-            "canvas.style.position = 'fixed';" +
-            "canvas.style.left = '50%';" +
-            "canvas.style.top = '50%';" +
-            "canvas.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';" +
-            "canvas.style.transformOrigin = 'center center';" +
-            "" +
-            "// Alternative approach using viewport" +
-            "var viewport = document.querySelector('meta[name=viewport]');" +
-            "if (!viewport) {" +
-            "  viewport = document.createElement('meta');" +
-            "  viewport.name = 'viewport';" +
-            "  document.head.appendChild(viewport);" +
-            "}" +
-            "viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';" +
-            "" +
-            "console.log('Auto-scaled to: ' + scale + 'x');" +
-            "})();";
+        switch (currentMode) {
+            case 0: // FIT mode
+                scale = 100;
+                break;
+            case 1: // FILL mode
+                scale = 130;
+                break;
+            case 2: // 150% zoom
+                scale = 150;
+                break;
+        }
         
-        webView.loadUrl(js);
+        // Apply WebView scale
+        webView.setInitialScale(scale);
         
-        // Flash the button to show it worked
+        // Save preference
+        prefs.edit().putInt("displayMode", currentMode).apply();
+        
+        // Flash button
         resizeButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF00FF00));
         resizeButton.postDelayed(new Runnable() {
             @Override
