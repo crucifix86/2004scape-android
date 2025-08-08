@@ -23,9 +23,19 @@ public class GameActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        // Full screen mode
+        // Full screen mode with immersive sticky
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        
+        // Hide system UI for true full screen
+        View decorView = getWindow().getDecorView();
+        decorView.setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_FULLSCREEN);
         
         setContentView(R.layout.activity_game);
         
@@ -57,19 +67,19 @@ public class GameActivity extends AppCompatActivity {
         // Enable database
         webSettings.setDatabaseEnabled(true);
         
-        // Enable app cache
-        webSettings.setAppCacheEnabled(true);
+        // App cache is deprecated in newer Android versions
         
         // Set cache mode
         webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
         
-        // Enable zooming
+        // Disable zooming completely
         webSettings.setBuiltInZoomControls(false);
         webSettings.setDisplayZoomControls(false);
+        webSettings.setSupportZoom(false);
         
-        // Fit content to screen
-        webSettings.setLoadWithOverviewMode(true);
-        webSettings.setUseWideViewPort(true);
+        // Use viewport settings from the web page
+        webSettings.setLoadWithOverviewMode(false);
+        webSettings.setUseWideViewPort(false);
         
         // Allow file access
         webSettings.setAllowFileAccess(true);
@@ -85,6 +95,22 @@ public class GameActivity extends AppCompatActivity {
             public void onPageFinished(WebView view, String url) {
                 progressBar.setVisibility(View.GONE);
                 webView.setVisibility(View.VISIBLE);
+                
+                // Inject JavaScript to handle full screen canvas
+                String js = "javascript:(function() {" +
+                    "var meta = document.querySelector('meta[name=viewport]');" +
+                    "if (!meta) {" +
+                    "  meta = document.createElement('meta');" +
+                    "  meta.name = 'viewport';" +
+                    "  document.head.appendChild(meta);" +
+                    "}" +
+                    "meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';" +
+                    "document.body.style.margin = '0';" +
+                    "document.body.style.padding = '0';" +
+                    "document.body.style.overflow = 'hidden';" +
+                    "document.body.style.height = '100vh';" +
+                    "})();";
+                view.loadUrl(js);
             }
         });
         
