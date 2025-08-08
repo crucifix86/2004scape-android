@@ -13,18 +13,15 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import androidx.appcompat.app.AppCompatActivity;
 import android.content.SharedPreferences;
-import android.webkit.JavascriptInterface;
 
 public class GameActivity extends AppCompatActivity {
     
-    private ScalableWebView webView;
+    private WebView webView;
     private ProgressBar progressBar;
     private Button fullscreenButton;
-    private Button resizeButton;
     private String serverUrl;
     private SharedPreferences prefs;
     private boolean isFullscreen = true;
-    private int currentMode = 0; // 0=fit, 1=fill, 2=zoom
     
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -56,14 +53,8 @@ public class GameActivity extends AppCompatActivity {
         webView = findViewById(R.id.webView);
         progressBar = findViewById(R.id.progressBar);
         fullscreenButton = findViewById(R.id.fullscreenButton);
-        resizeButton = findViewById(R.id.resizeButton);
         
         prefs = getSharedPreferences("GameSettings", MODE_PRIVATE);
-        
-        // Load saved display mode
-        currentMode = prefs.getInt("displayMode", 0);
-        String[] modes = {"FIT", "FILL", "ZOOM"};
-        resizeButton.setText(modes[currentMode]);
         
         setupWebView();
         
@@ -72,15 +63,6 @@ public class GameActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 toggleFullscreen();
-            }
-        });
-        
-        // Setup display mode button
-        resizeButton.setText("FIT");
-        resizeButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                cycleDisplayMode();
             }
         });
         
@@ -95,8 +77,6 @@ public class GameActivity extends AppCompatActivity {
         // Enable JavaScript
         webSettings.setJavaScriptEnabled(true);
         
-        // Add JavaScript interface
-        webView.addJavascriptInterface(new WebInterface(), "Android");
         
         // Enable DOM storage
         webSettings.setDomStorageEnabled(true);
@@ -136,9 +116,6 @@ public class GameActivity extends AppCompatActivity {
             public void onPageFinished(WebView view, String url) {
                 progressBar.setVisibility(View.GONE);
                 webView.setVisibility(View.VISIBLE);
-                
-                // Apply display mode
-                applyDisplayMode();
             }
         });
         
@@ -179,70 +156,6 @@ public class GameActivity extends AppCompatActivity {
         isFullscreen = !isFullscreen;
     }
     
-    private void cycleDisplayMode() {
-        currentMode = (currentMode + 1) % 3;
-        applyDisplayMode();
-    }
-    
-    private void applyDisplayMode() {
-        // Get screen dimensions
-        int screenWidth = webView.getWidth();
-        int screenHeight = webView.getHeight();
-        
-        if (screenWidth == 0 || screenHeight == 0) {
-            // WebView not ready yet, try again
-            webView.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    applyDisplayMode();
-                }
-            }, 100);
-            return;
-        }
-        
-        // Game canvas is 765x503 (based on desktop version)
-        // Mobile page might have additional UI elements
-        float gameWidth = 765f;
-        float gameHeight = 503f;
-        
-        // Calculate scale to fit screen
-        float scaleX = screenWidth / gameWidth;
-        float scaleY = screenHeight / gameHeight;
-        float scale = Math.min(scaleX, scaleY); // Use smaller scale to fit both dimensions
-        
-        switch (currentMode) {
-            case 0: // FIT - Show entire game
-                // Scale down to ensure everything is visible
-                scale = scale * 0.9f; // 90% to add some margin
-                break;
-            case 1: // FILL - Fill more screen
-                // Use the original calculated scale
-                break;
-            case 2: // ZOOM - Closer view
-                scale = scale * 1.2f;
-                break;
-        }
-        
-        // Apply scale to entire WebView
-        webView.setScale(scale);
-        
-        // Update button text
-        String[] modes = {"FIT", "FILL", "ZOOM"};
-        resizeButton.setText(modes[currentMode]);
-        
-        // Save preference
-        prefs.edit().putInt("displayMode", currentMode).apply();
-        
-        // Flash button
-        resizeButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF00FF00));
-        resizeButton.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                resizeButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0x80000000));
-            }
-        }, 300);
-    }
-    
     @Override
     public void onBackPressed() {
         if (webView.canGoBack()) {
@@ -272,14 +185,4 @@ public class GameActivity extends AppCompatActivity {
         super.onDestroy();
     }
     
-    public class WebInterface {
-        @JavascriptInterface
-        public void saveCanvasPosition(float x, float y, float scale) {
-            SharedPreferences.Editor editor = prefs.edit();
-            editor.putFloat("canvasX", x);
-            editor.putFloat("canvasY", y);
-            editor.putFloat("canvasScale", scale);
-            editor.apply();
-        }
-    }
 }
