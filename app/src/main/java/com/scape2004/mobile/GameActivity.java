@@ -197,8 +197,16 @@ public class GameActivity extends AppCompatActivity {
             resizeButton.setText("DONE");
             resizeButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xFF00FF00));
             
-            // Show resize overlay
+            // Enable resize mode on actual canvas
             String js = "javascript:(function() {" +
+                "var canvas = document.querySelector('canvas');" +
+                "if (!canvas) return;" +
+                "" +
+                "// Add visual indicators" +
+                "canvas.style.outline = '2px dashed #ffd700';" +
+                "canvas.style.outlineOffset = '-2px';" +
+                "" +
+                "// Create resize overlay for touch handling" +
                 "var overlay = document.createElement('div');" +
                 "overlay.id = 'resizeOverlay';" +
                 "overlay.style.position = 'fixed';" +
@@ -206,34 +214,35 @@ public class GameActivity extends AppCompatActivity {
                 "overlay.style.left = '0';" +
                 "overlay.style.width = '100%';" +
                 "overlay.style.height = '100%';" +
-                "overlay.style.backgroundColor = 'rgba(0,0,0,0.5)';" +
                 "overlay.style.zIndex = '9999';" +
-                "overlay.innerHTML = '<div style=\"color:#ffd700;text-align:center;padding:20px;font-size:18px;\">Drag to move • Pinch to resize</div>';" +
+                "overlay.style.backgroundColor = 'transparent';" +
                 "" +
-                "var canvas = document.querySelector('canvas');" +
-                "if (!canvas) return;" +
+                "// Add instructions" +
+                "var instructions = document.createElement('div');" +
+                "instructions.style.position = 'fixed';" +
+                "instructions.style.top = '60px';" +
+                "instructions.style.left = '0';" +
+                "instructions.style.right = '0';" +
+                "instructions.style.textAlign = 'center';" +
+                "instructions.style.color = '#ffd700';" +
+                "instructions.style.fontSize = '16px';" +
+                "instructions.style.backgroundColor = 'rgba(0,0,0,0.8)';" +
+                "instructions.style.padding = '10px';" +
+                "instructions.style.zIndex = '10000';" +
+                "instructions.innerHTML = 'Drag to move • Pinch to resize';" +
+                "document.body.appendChild(instructions);" +
                 "" +
-                "var canvasClone = canvas.cloneNode();" +
-                "canvasClone.id = 'resizeCanvas';" +
-                "canvasClone.style.border = '2px dashed #ffd700';" +
-                "canvasClone.style.position = 'absolute';" +
-                "canvasClone.style.left = canvas.style.left || '0px';" +
-                "canvasClone.style.top = canvas.style.top || '0px';" +
-                "canvasClone.style.transform = canvas.style.transform || 'scale(1)';" +
-                "canvasClone.style.transformOrigin = 'top left';" +
-                "canvasClone.style.zIndex = '10000';" +
-                "" +
-                "overlay.appendChild(canvasClone);" +
                 "document.body.appendChild(overlay);" +
+                "" +
+                "// Get current position and scale" +
+                "var currentX = parseFloat(canvas.style.left) || 0;" +
+                "var currentY = parseFloat(canvas.style.top) || 0;" +
+                "var currentScale = 1;" +
+                "var transform = canvas.style.transform.match(/scale\\(([^)]+)\\)/);" +
+                "if (transform) currentScale = parseFloat(transform[1]);" +
                 "" +
                 "var isDragging = false;" +
                 "var startX = 0, startY = 0;" +
-                "var currentX = parseFloat(canvasClone.style.left) || 0;" +
-                "var currentY = parseFloat(canvasClone.style.top) || 0;" +
-                "var currentScale = 1;" +
-                "var transform = canvasClone.style.transform.match(/scale\\(([^)]+)\\)/);" +
-                "if (transform) currentScale = parseFloat(transform[1]);" +
-                "" +
                 "var initialDist = 0;" +
                 "var initialScale = currentScale;" +
                 "" +
@@ -251,52 +260,54 @@ public class GameActivity extends AppCompatActivity {
                 "    initialScale = currentScale;" +
                 "  }" +
                 "  e.preventDefault();" +
-                "});" +
+                "  e.stopPropagation();" +
+                "}, {passive: false});" +
                 "" +
                 "overlay.addEventListener('touchmove', function(e) {" +
                 "  if (isDragging && e.touches.length === 1) {" +
                 "    currentX = e.touches[0].clientX - startX;" +
                 "    currentY = e.touches[0].clientY - startY;" +
-                "    canvasClone.style.left = currentX + 'px';" +
-                "    canvasClone.style.top = currentY + 'px';" +
+                "    canvas.style.left = currentX + 'px';" +
+                "    canvas.style.top = currentY + 'px';" +
                 "  } else if (e.touches.length === 2 && initialDist > 0) {" +
                 "    var dist = Math.hypot(" +
                 "      e.touches[0].clientX - e.touches[1].clientX," +
                 "      e.touches[0].clientY - e.touches[1].clientY" +
                 "    );" +
                 "    currentScale = Math.max(0.5, Math.min(3, initialScale * (dist / initialDist)));" +
-                "    canvasClone.style.transform = 'scale(' + currentScale + ')';" +
+                "    canvas.style.transform = 'scale(' + currentScale + ')';" +
+                "    canvas.style.transformOrigin = 'top left';" +
                 "  }" +
                 "  e.preventDefault();" +
-                "});" +
+                "  e.stopPropagation();" +
+                "}, {passive: false});" +
                 "" +
-                "overlay.addEventListener('touchend', function() {" +
+                "overlay.addEventListener('touchend', function(e) {" +
                 "  isDragging = false;" +
                 "  initialDist = 0;" +
                 "  window.Android.saveCanvasPosition(currentX, currentY, currentScale);" +
-                "});" +
+                "  e.preventDefault();" +
+                "  e.stopPropagation();" +
+                "}, {passive: false});" +
                 "" +
-                "window.resizeData = {x: currentX, y: currentY, scale: currentScale};" +
+                "window.resizeInstructions = instructions;" +
                 "})();";
             webView.loadUrl(js);
         } else {
             resizeButton.setText("RESIZE");
             resizeButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0x80000000));
             
-            // Apply resize and remove overlay
+            // Disable resize mode
             String js = "javascript:(function() {" +
+                "var canvas = document.querySelector('canvas');" +
+                "if (canvas) {" +
+                "  canvas.style.outline = 'none';" +
+                "}" +
                 "var overlay = document.getElementById('resizeOverlay');" +
-                "if (overlay) {" +
-                "  var data = window.resizeData;" +
-                "  if (data) {" +
-                "    var canvas = document.querySelector('canvas');" +
-                "    if (canvas) {" +
-                "      canvas.style.left = data.x + 'px';" +
-                "      canvas.style.top = data.y + 'px';" +
-                "      canvas.style.transform = 'scale(' + data.scale + ')';" +
-                "    }" +
-                "  }" +
-                "  overlay.remove();" +
+                "if (overlay) overlay.remove();" +
+                "if (window.resizeInstructions) {" +
+                "  window.resizeInstructions.remove();" +
+                "  delete window.resizeInstructions;" +
                 "}" +
                 "})();";
             webView.loadUrl(js);
